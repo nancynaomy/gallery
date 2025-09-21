@@ -16,16 +16,26 @@ mongoose.connect(`${mongodb_url}${dbName}`,{ useNewUrlParser: true , useUnifiedT
 
 // test if the database has connected successfully
 let db = mongoose.connection;
-db.once('open', ()=>{
+db.once ('open', ()=>{
     console.log('Database connected successfully')
-})
+}
 
 // Initializing the app
-const app = express();
+// const app = express();
 
 
 // View Engine
-app.set('view engine', 'ejs');
+app.set('view engine', 'ejs');app.set('view engine', 'ejs');
+```)  
+
+that means your views live inside a **`views/`** folder in your project root.  
+
+---
+
+### 🔍 To find it
+Run in your project folder:
+
+
 
 // Set up the public folder;
 app.use(express.static(path.join(__dirname, 'public')));
@@ -43,4 +53,4 @@ app.use('/image', image);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT,() =>{
     console.log(`Server is listening at http://localhost:${PORT}`)
-});
+;}
