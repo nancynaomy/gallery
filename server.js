@@ -1,56 +1,30 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
 const path = require('path');
-
-// Define routes
-let index = require('./routes/index');
-let image = require('./routes/image');
-
-// connecting the database
-let mongodb_url = 'mongodb://localhost:27017/';
-let dbName = 'darkroom';
-mongoose.connect(`${mongodb_url}${dbName}`,{ useNewUrlParser: true , useUnifiedTopology: true }, (err)=>{
-    if (err) console.log(err)
-});
-
-// test if the database has connected successfully
-let db = mongoose.connection;
-db.once ('open'), ()=>{
-    console.log('Database connected successfully')
-}
-
-// Initializing the app
 const app = express();
 
+// Use environment PORT or 3000
+const PORT = process.env.PORT || 3000;
 
-// View Engine
-app.set('view engine', 'ejs');app.set('view engine', 'ejs');
-```)  
-
-that means your views live inside a **`views/`** folder in your project root.  
-
----
-
-### 🔍 To find it
-Run in your project folder:
-
-
-
-// Set up the public folder;
+// Serve static files from "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// body parser middleware
-app.use(express.json())
+// Landing page route
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Gallery</title>
+      </head>
+      <body>
+        <h1 style="font-size:50px; color:red;">MILESTONE 2</h1>
+        <h1 style="font-size:50px; color:blue;">MILESTONE 3</h1>
+        <h1 style="font-size:50px; color:green;">MILESTONE 4</h1>
+      </body>
+    </html>
+  `);
+});
 
-
-app.use('/', index);
-app.use('/image', image);
-
-
-
- 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT,() =>{
-    console.log(`Server is listening at http://localhost:${PORT}`)
-;}
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is listening at http://localhost:${PORT}`);
+});
