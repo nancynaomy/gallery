@@ -16,16 +16,18 @@ mongoose.connect(`${mongodb_url}${dbName}`,{ useNewUrlParser: true , useUnifiedT
 
 // test if the database has connected successfully
 let db = mongoose.connection;
-db.once('open', ()=>{
+db.once ('open'), ()=>{
     console.log('Database connected successfully')
-})
+}
 
 // Initializing the app
 const app = express();
 
 
 // View Engine
-app.set('view engine', 'ejs');
+app.set('view engine', 'ejs');app.set('view engine', 'ejs');
+
+
 
 // Set up the public folder;
 app.use(express.static(path.join(__dirname, 'public')));
@@ -44,3 +46,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT,() =>{
     console.log(`Server is listening at http://localhost:${PORT}`)
 });
+module.exports=app;
