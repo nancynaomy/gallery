@@ -1,55 +1,48 @@
 const express = require('express');
 const router = express.Router();
-const uuid = require('uuid');
-let upload = require('./upload');
-const url = require('url')
-let Image = require('../models/images');
+const upload = require('./upload'); // your multer middleware
+const Image = require('../models/images');
 
+// GET / => Render index.ejs with image list and optional message
+router.get('/', (req, res) => {
+  Image.find({}, (err, images) => {
+    if (err) {
+      console.error("Error fetching images from DB:", err);
+      return res.render('index', { images: [], msg: 'Error loading images.' });
+    }
 
-var db = []
+    res.render('index', {
+      images: images,
+      msg: req.query.msg
+    });
+  });
+});
 
-router.get('/', (req,res)=>{
-    
-    Image.find({}, function(err, images){
-        // console.log(images)
-        if (err) console.log(err);
-        res.render('index',{images:images, msg: req.query.msg })
-    })
-})
+// POST /upload => Handle image upload
+router.post('/upload', (req, res) => {
+  upload(req, res, (err) => {
+    if (err) {
+      return res.redirect(`/?msg=${encodeURIComponent(err)}`);
+    }
 
-router.post('/upload', (req, res)=>{
-    upload(req,res, (err)=>{
-        if (err){
-            res.redirect(`/?msg=${err}`);
-        }else{
-            console.log(req.file);
-            // res.send("test");
-            if (req.file == undefined){
-                res.redirect('/?msg=Error: No file selcted!');
-            }else{
-                // const imageObj = {
-                //     id: uuid.v4(),
-                //     name: req.file.filename,
-                //     path: 'images/' + req.file.filename
-                // }
-                // db.push(imageObj);
-                // console.log(db);
+    if (!req.file) {
+      return res.redirect('/?msg=No file selected');
+    }
 
-                // create new image
-                let newImage = new Image({
-                    name: req.file.filename,
-                    size: req.file.size,
-                    path: 'images/' + req.file.filename
-                })
+    // Save image info to MongoDB
+    const newImage = new Image({
+      name: req.file.filename,
+      size: req.file.size,
+      path: 'images/' + req.file.filename // should match static folder path
+    });
 
-                // save the uploaded image to the database
-                newImage.save()
-
-                
-                res.redirect('/?msg=File uploaded successfully');
-            }
-        }
-    })
-})
+    newImage.save()
+      .then(() => res.redirect('/?msg=File uploaded successfully'))
+      .catch(dbErr => {
+        console.error("Error saving image to DB:", dbErr);
+        res.redirect('/?msg=Error saving image to database');
+      });
+  });
+});
 
 module.exports = router;

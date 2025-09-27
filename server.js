@@ -1,85 +1,56 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const path = require('path');
+require('dotenv').config();
 
 // Define routes
-let index = require('./routes/index');
-let image = require('./routes/image');
+const index = require('./routes/index');
+const image = require('./routes/image');
 
-// connecting the database
-// connecting the database
-let mongodb_url = 'mongodb://localhost:27017/';
-let dbName = 'darkroom';
+// Get environment variables
+const {
+  MONGOUSER: username,
+  MONGOPASSWORD: userpassword,
+  MONGOHOST: mongocluster,
+  MONGOPRODUCTIONDATABASE: prod_env,
+  //PORT = 5000
+} = process.env;
 
-mongoose.connect(`${mongodb_url}${dbName} `)
-.then(() => {
-    console.log('✅ Database connected successfully');
-})
-.catch((err) => {
-    console.error('❌ Database connection error:', err);
-});
+// Validate env variables
+if (!username || !userpassword || !mongocluster || !prod_env) {
+  console.error("Missing MongoDB environment variables.");
+  process.exit(1);
+}
 
+// Construct URI
+const mongoURI = `mongodb+srv://${username}:${userpassword}@${mongocluster}/${prod_env}?retryWrites=true&w=majority`;
 
-// test if the database has connected successfully
-let db = mongoose.connection;
+// Connect to MongoDB
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected...'))
+  .catch(err => console.error("MongoDB connection failed:", err));
 
-db.once('open', () => {
-    console.log('Database connected successfully');
-});
-
-db.on('error', (err) => {
-    console.error('Database connection error:', err);
-});
-
-
-// Initializing the app
- milestone2
+// Initialize app
 const app = express();
 
+// View engine
+app.set('view engine', 'ejs');
 
-
- HEAD
-// Serve static files from "public" folder
-// View Engine
-app.set('view engine', 'ejs');app.set('view engine', 'ejs');
-
-
-
-// Set up the public folder;
-milestone2
+// Static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Landing page route
-app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>Gallery</title>
-      </head>
-      <body>
-        <h1 style="font-size:50px; color:red;">MILESTONE 2</h1>
-        <h1 style="font-size:50px; color:blue;">MILESTONE 3</h1>
-        <h1 style="font-size:50px; color:green;">MILESTONE 4</h1>
-      </body>
-    </html>
-  `);
-});
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // if needed
 
-HEAD
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is listening at http://localhost:${PORT}`);
-});
-
+// Routes
 app.use('/', index);
 app.use('/image', image);
 
+// Server
+const PORT = process.env.PORT || 50000;
+app.listen(PORT, () => {
+    console.log(`Server is listening at http://localhost:${PORT}`);
+  });
 
-
- 
-const PORT = process.env.PORT || 5001;
-
-app.listen(PORT,() =>{
-    console.log(`Server is listening at http://localhost:${PORT}`)
-});
-module.exports=app;
- milestone2
+module.exports = app;
