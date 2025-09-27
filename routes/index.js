@@ -1,39 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('./upload'); // your multer middleware
+const upload = require('./upload'); // multer middleware
 const Image = require('../models/images');
 
-// GET / => Render index.ejs with image list and optional message
+// GET home route
 router.get('/', (req, res) => {
   Image.find({}, (err, images) => {
     if (err) {
-      console.error("Error fetching images from DB:", err);
-      return res.render('index', { images: [], msg: 'Error loading images.' });
+      console.error("Error fetching images:", err);
+      return res.render('index', { images: [], msg: "Error fetching images" });
     }
-
-    res.render('index', {
-      images: images,
-      msg: req.query.msg
-    });
+    res.render('index', { images, msg: req.query.msg });
   });
 });
 
-// POST /upload => Handle image upload
+// POST upload route
 router.post('/upload', (req, res) => {
   upload(req, res, (err) => {
     if (err) {
-      return res.redirect(`/?msg=${encodeURIComponent(err)}`);
+      return res.redirect(`/?msg=${err}`);
     }
 
     if (!req.file) {
-      return res.redirect('/?msg=No file selected');
+      return res.redirect('/?msg=Error: No file selected!');
     }
 
-    // Save image info to MongoDB
+    // Create new image document
     const newImage = new Image({
       name: req.file.filename,
       size: req.file.size,
-      path: 'images/' + req.file.filename // should match static folder path
+      path: 'images/' + req.file.filename
     });
 
     newImage.save()
