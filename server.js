@@ -1,56 +1,56 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const path = require('path');
-const config = require('./_config');
+require('dotenv').config();
 
 // Define routes
-let index = require('./routes/index');
-let image = require('./routes/image');
+const index = require('./routes/index');
+const image = require('./routes/image');
 
-// Initializing the app
+// Get environment variables
+const {
+  MONGOUSER: username,
+  MONGOPASSWORD: userpassword,
+  MONGOHOST: mongocluster,
+  MONGOPRODUCTIONDATABASE: prod_env,
+  //PORT = 5000
+} = process.env;
+
+// Validate env variables
+if (!username || !userpassword || !mongocluster || !prod_env) {
+  console.error("Missing MongoDB environment variables.");
+  process.exit(1);
+}
+
+// Construct URI
+const mongoURI = `mongodb+srv://${username}:${userpassword}@${mongocluster}/${prod_env}?retryWrites=true&w=majority`;
+
+// Connect to MongoDB
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected...'))
+  .catch(err => console.error("MongoDB connection failed:", err));
+
+// Initialize app
 const app = express();
 
-// connecting the database
-
-const MONGODB_URI = process.env.MONGODB_URI || config.mongoURI[app.settings.env]
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true  },(err)=>{
-    if (err) {
-        console.log(err)
-    }else{
-        console.log(`Connected to Database: ${MONGODB_URI}`)
-    }
-});
-
-// test if the database has connected successfully
-// let db = mongoose.connection;
-// db.once('open', ()=>{
-//     console.log('Database connected successfully')
-// })
-
-
-
-
-// View Engine
+// View engine
 app.set('view engine', 'ejs');
 
-// Set up the public folder;
+// Static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// body parser middleware
-app.use(express.json())
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // if needed
 
-
+// Routes
 app.use('/', index);
 app.use('/image', image);
 
-
-
- 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT,() =>{
-    console.log(`Server is listening at http://localhost:${PORT}`)
-});
-
+// Server
+const PORT = process.env.PORT || 50000;
+app.listen(PORT, () => {
+    console.log(`Server is listening at http://localhost:${PORT}`);
+  });
 
 module.exports = app;
