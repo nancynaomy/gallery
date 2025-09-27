@@ -1,13 +1,19 @@
 pipeline {
     agent any
 
-    environment { 
-         DOCKER_IMAGE = "naomano/gallery"
-        DOCKER_CREDENTIALS = "dockerhub-credentials"
-        RENDER_API_KEY = credentials('render-api-key')
-        }
+    tools {
+        nodejs 'nodeJS22'
     }
-    
+
+    triggers {
+        githubPush()
+    }
+
+    environment { 
+        RENDER_WEBHOOK = credentials('render-webhook')   // render webhook
+        SLACK_WEBHOOK  = credentials('slackbot-webhook') // slack bot webhook
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -21,38 +27,32 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                sh 'npm run build || echo "No build step"'
-            }
-        }
-
-        stage('Docker Build & Push') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS) {
-                        def app = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
-                        app.push()
-                        app.push("latest")
-                    }
-                }
-            }
-        }
-
         stage('Deploy to Render') {
             steps {
                 sh '''
                   curl -X POST \
-                    -H "Authorization: Bearer $RENDER_API_KEY" \
                     -H "Content-Type: application/json" \
                     -d '{"clearCache":true}' \
-                    https://api.render.com/v1/services/YOUR_RENDER_SERVICE_ID/deploys
+                    $RENDER_WEBHOOK
                 '''
             }
         }
     }
 
-    triggers {
-        githubPush()
+    post {
+        success {
+            sh '''
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"Build #${BUILD_NUMBER} for *${JOB_NAME}* succeeded and deployed to Render."}' \
+                $SLACK_WEBHOOK
+            '''
+        }
+        failure {
+            sh '''
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"Build #${BUILD_NUMBER} for *${JOB_NAME}* failed. Please check Jenkins."}' \
+                $SLACK_WEBHOOK
+            '''
+        }
     }
 }
