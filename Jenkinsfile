@@ -9,11 +9,6 @@ pipeline {
         githubPush()
     }
 
-    environment { 
-        RENDER_WEBHOOK = credentials('render-webhook')   // render webhook
-        SLACK_WEBHOOK  = credentials('slackbot-webhook') // slack bot webhook
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -27,32 +22,42 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                sh 'npm run build || echo "No build step"'
+            }
+        }
+
         stage('Deploy to Render') {
             steps {
-                sh '''
-                  curl -X POST \
-                    -H "Content-Type: application/json" \
-                    -d '{"clearCache":true}' \
-                    $RENDER_WEBHOOK
-                '''
+                withCredentials(
+                       [string
+                          (credentialsId: 'render-webhook', variable: 'DEPLOYHOOK')
+                        ]
+                        ) {
+                    sh 'curl -X POST $DEPLOYHOOK'
+                }
             }
         }
     }
 
     post {
         success {
-            sh '''
-              curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"Build #${BUILD_NUMBER} for *${JOB_NAME}* succeeded and deployed to Render."}' \
-                $SLACK_WEBHOOK
-            '''
+            slackSend(
+                channel: '#nancy_ip1',
+                tokenCredentialId: 'slack',
+                color: 'good',
+                message: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed to Render.\nView app: https://gallery-7io0.onrender.com\n${env.BUILD_URL}"
+            )
         }
+
         failure {
-            sh '''
-              curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"Build #${BUILD_NUMBER} for *${JOB_NAME}* failed. Please check Jenkins."}' \
-                $SLACK_WEBHOOK
-            '''
+            slackSend(
+                channel: '#paul_ip1',
+                tokenCredentialId: 'slack',
+                color: 'danger',
+                message: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER} failed.\n${env.BUILD_URL}"
+            )
         }
     }
 }
